@@ -1,0 +1,39 @@
+version: "3.1"
+services:
+  db:
+    image: mariadb
+    restart: always
+    environment:
+      MARIADB_USER: lmdk
+      MARIADB_PASSWORD: lmdk
+      MARIADB_ROOT_PASSWORD: lmdk
+      MARIADB_DATABASE: nextcloud
+    volumes:
+      - lmdkdb:/var/lib/mysql
+    networks:
+      - lmdknetwork
+ 
+  app:
+    image: nextcloud
+    restart: always
+    ports:
+      - 8080:80
+    links:
+      - db
+    volumes:
+      - lmdknextcloud:/var/www/html
+    environment:
+      - MARIADB_PASSWORD=lmdk
+      - MARIADB_DATABASE=nextcloud
+      - MARIADB_USER=lmdk
+      - MARIADB_HOST=db
+    networks:
+      - lmdknetwork
+
+networks:
+  lmdknetwork:
+    driver: bridge
+
+volumes:
+  lmdkdb:
+  lmdknextcloud:
