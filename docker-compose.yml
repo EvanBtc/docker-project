@@ -13,6 +13,25 @@ services:
     networks:
       - lmdknetwork
  
+  redis:
+    image: redis
+    hostname: redis
+    restart: always
+    networks:
+      - lmdknetwork
+
+#  redis-commander:
+#    container_name: redis-commander
+#    hostname: redis-commander
+#    image: ghcr.io/joeferner/redis-commander:latest
+#    restart: always
+#    environment:
+#    - REDIS_HOSTS=local:redis:6379
+#    ports:
+#    - "8081:8081"
+#    networks:
+#      - lmdknetwork
+
   app:
     image: nextcloud
     restart: always
@@ -20,6 +39,7 @@ services:
       - 8080:80
     links:
       - db
+      - redis
     volumes:
       - lmdknextcloud:/var/www/html
     environment:
@@ -27,8 +47,12 @@ services:
       - MARIADB_DATABASE=nextcloud
       - MARIADB_USER=lmdk
       - MARIADB_HOST=db
+      - REDIS_HOST=redis
     networks:
       - lmdknetwork
+    depends_on:
+       - db
+       - redis
 
 networks:
   lmdknetwork:
