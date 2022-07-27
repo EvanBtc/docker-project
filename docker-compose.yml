@@ -36,7 +36,7 @@ services:
     image: nextcloud
     restart: always
     ports:
-      - 8080:80
+      - "8080:80"
     links:
       - db
       - redis
@@ -48,11 +48,44 @@ services:
       - MARIADB_USER=lmdk
       - MARIADB_HOST=db
       - REDIS_HOST=redis
+      - NEXTCLOUD_TRUSTED_DOMAINS=app.traefik.me
+    labels:
+      - "traefik.http.routers.app.rule=Host(`app.traefik.me`)"
+      - "traefik.http.routers.app-tls.tls.domains[0].main=app.traefik.me"
+      - "traefik.http.routers.app-tls.tls.domains[0].sans=app-*.traefik.me"
+      - "traefik.http.middlewares.app-redirectscheme.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.app-redirectscheme.redirectscheme.permanent=true"
     networks:
       - lmdknetwork
     depends_on:
        - db
        - redis
+
+  traefik:
+    restart: unless-stopped
+    image: traefik:v2.0.2
+    ports:
+      - "80:80"
+      - "8081:8080"
+      - "443:443"
+    labels:
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+     
+    volumes:
+      - ./traefik.yml:/etc/traefik/traefik.yml
+      - ./tls.yml:/etc/traefik/tls.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+      - certs:/etc/ssl/traefik
+    networks:
+      - lmdknetwork
+
+  reverse-proxy-https-helper:
+    image: alpine
+    command: sh -c "cd /etc/ssl/traefik
+      && wget traefik.me/cert.pem -O cert.pem
+      && wget traefik.me/privkey.pem -O privkey.pem"
+    volumes:
+      - certs:/etc/ssl/traefik
 
 networks:
   lmdknetwork:
@@ -61,3 +94,4 @@ networks:
 volumes:
   lmdkdb:
   lmdknextcloud:
+  certs:
